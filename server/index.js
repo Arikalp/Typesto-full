@@ -10,7 +10,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const User = require("./models/usermodal");
 const Leaderboard = require("./models/leaderboardmodal");
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 const JWT_SECRET = "supersecret";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -33,7 +33,7 @@ mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/typesto",
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true
 }));
 app.use(express.json());
