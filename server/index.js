@@ -56,6 +56,19 @@ function authMiddleware(req, res, next) {
 
 // -------------------- ROUTES --------------------
 
+// Add this route handler for the root path
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Typesto API is running!', 
+    status: 'success',
+    endpoints: {
+      login: '/api/login',
+      signup: '/api/signup',
+      leaderboard: '/api/leaderboard'
+    }
+  });
+});
+
 // SIGNUP
 app.post("/api/signup", async (req, res) => {
   try {
