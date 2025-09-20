@@ -8,6 +8,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const User = require("./models/usermodal");
+const Leaderboard = require("./models/leaderboardmodal");
 const app = express();
 const PORT = 5000;
 const JWT_SECRET = "supersecret";
@@ -15,7 +16,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // Initialize Gemini AI
 console.log('GEMINI_API_KEY loaded:', GEMINI_API_KEY ? 'Yes' : 'No');
-console.log('API Key length:', GEMINI_API_KEY ? GEMINI_API_KEY.length : 0);
+// console.log('API Key length:', GEMINI_API_KEY ? GEMINI_API_KEY.length : 0);
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // Rate limiting
@@ -23,7 +24,7 @@ let lastApiCall = 0;
 const API_COOLDOWN = 5000; // 5 seconds between calls 
 
 // MongoDB Connection
-mongoose.connect("mongodb://localhost:27017/typesto", {
+mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/typesto", {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
@@ -94,7 +95,7 @@ app.post("/api/login", async (req, res) => {
 
     // Generate token
     const token = jwt.sign({ id: user._id, username: user.username, email: user.email }, JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "1d",
     });
 
     res.cookie("token", token, { httpOnly: true });
@@ -175,31 +176,76 @@ app.post("/api/generate-words", async (req, res) => {
   }
 });
 
-// LEADERBOARD
-app.get("/api/leaderboard", (req, res) => {
-  const mockLeaderboards = {
-    easy: [
-      { _id: '1', username: 'SpeedTyper', wpm: 85, accuracy: 98, date: new Date() },
-      { _id: '2', username: 'FastFingers', wpm: 82, accuracy: 96, date: new Date() },
-      { _id: '3', username: 'QuickKeys', wpm: 78, accuracy: 94, date: new Date() },
-    ],
-    medium: [
-      { _id: '4', username: 'TypeMaster', wpm: 72, accuracy: 97, date: new Date() },
-      { _id: '5', username: 'KeyboardKing', wpm: 68, accuracy: 95, date: new Date() },
-      { _id: '6', username: 'TypingPro', wpm: 65, accuracy: 93, date: new Date() },
-    ],
-    hard: [
-      { _id: '7', username: 'WordWizard', wpm: 58, accuracy: 96, date: new Date() },
-      { _id: '8', username: 'LetterLord', wpm: 55, accuracy: 94, date: new Date() },
-      { _id: '9', username: 'TextTitan', wpm: 52, accuracy: 92, date: new Date() },
-    ],
-    alphanumeric: [
-      { _id: '10', username: 'CodeTyper', wpm: 45, accuracy: 98, date: new Date() },
-      { _id: '11', username: 'DevSpeed', wpm: 42, accuracy: 96, date: new Date() },
-      { _id: '12', username: 'SyntaxSpeedy', wpm: 38, accuracy: 94, date: new Date() },
-    ]
-  };
-  res.json(mockLeaderboards);
+// Get leaderboard
+app.get("/api/leaderboard", async (req, res) => {
+  try {
+    const leaderboard = await Leaderboard.findOne();
+    if (!leaderboard) {
+      // Create initial leaderboard if it doesn't exist
+      const newLeaderboard = new Leaderboard({
+        easy: [],
+        medium: [],
+        hard: [],
+        alphanumeric: []
+      });
+      await newLeaderboard.save();
+      return res.json(newLeaderboard);
+    }
+    res.json(leaderboard);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch leaderboard" });
+  }
+});
+
+// Update leaderboard
+app.post("/api/leaderboard", async (req, res) => {
+  try {
+    const { difficulty, username, wpm } = req.body;
+    
+    if (!difficulty || !username || !wpm) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    let leaderboard = await Leaderboard.findOne();
+    
+    if (!leaderboard) {
+      // Create new leaderboard
+      leaderboard = new Leaderboard({
+        easy: [],
+        medium: [],
+        hard: [],
+        alphanumeric: []
+      });
+    }
+
+    // Get current difficulty array
+    let difficultyArray = leaderboard[difficulty] || [];
+    
+    // Check if user already exists in leaderboard
+    const existingIndex = difficultyArray.findIndex(entry => entry.username === username);
+    
+    if (existingIndex !== -1) {
+      // Update existing user's score if new score is higher
+      if (wpm > difficultyArray[existingIndex].wpm) {
+        difficultyArray[existingIndex].wpm = wpm;
+      }
+    } else {
+      // Add new user
+      difficultyArray.push({ username, wpm });
+    }
+    
+    // Sort by WPM (highest first) and keep only top 5
+    difficultyArray.sort((a, b) => b.wpm - a.wpm);
+    difficultyArray = difficultyArray.slice(0, 5);
+    
+    // Update leaderboard
+    leaderboard[difficulty] = difficultyArray;
+    await leaderboard.save();
+    
+    res.json({ message: "Leaderboard updated!", leaderboard });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update leaderboard" });
+  }
 });
 
 // -------------------- SERVER --------------------
