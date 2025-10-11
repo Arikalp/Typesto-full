@@ -24,6 +24,7 @@ export default function TypingBox() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [sessionCompleted, setSessionCompleted] = useState(false);
   const [username, setUsername] = useState('');
+  const [wordCount, setWordCount] = useState(45);
 
   // Refs for current values
   const wordsRef = useRef(words);
@@ -73,9 +74,7 @@ export default function TypingBox() {
     if (isGenerating) return; // prevent concurrent calls
     setIsGenerating(true);
     try {
-      const wordCounts = { easy: 75, medium: 45, hard: 28, alphanumeric: 25 };
-      const wordCount = wordCounts[difficulty];
-      console.log("Generating words for difficulty:", difficulty);
+      console.log("Generating words for difficulty:", difficulty, "Word count:", wordCount);
 
       let newWords;
       
@@ -127,7 +126,7 @@ export default function TypingBox() {
     } finally {
       setIsGenerating(false);
     }
-  }, [difficulty, sessionStats]);
+  }, [difficulty, sessionStats, wordCount]);
 
   const calculateWpm = useCallback(() => {
     if (!startTimeRef.current) return 0;
@@ -341,6 +340,22 @@ export default function TypingBox() {
                     <div className="px-4 py-2 text-sm text-gray-300 border-b border-gray-700 flex justify-center">
                       <div className="font-semibold">Best Speed :</div>
                       <div className="text-green-400">{bestSpeed} WPM</div>
+                    </div>
+                    <div className="px-4 py-2 text-sm text-gray-300 border-b border-gray-700">
+                      <div className="font-semibold mb-2 text-center">Word Count:</div>
+                      <input 
+                        type="range" 
+                        min="25" 
+                        max="70" 
+                        value={wordCount} 
+                        onChange={(e) => setWordCount(parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                      />
+                      <div className="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>25</span>
+                        <span className="text-yellow-400 font-semibold">{wordCount}</span>
+                        <span>70</span>
+                      </div>
                     </div>
                     <div className="px-4 py-2 text-sm text-gray-300 border-b border-gray-700">
                       <div className="font-semibold flex justify-center  mb-2">Difficulty:</div>

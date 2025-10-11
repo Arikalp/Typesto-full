@@ -69,6 +69,22 @@ app.get('/', (req, res) => {
   });
 });
 
+// Test Gemini API
+app.get('/api/test-gemini', async (req, res) => {
+  try {
+    console.log('Testing Gemini API...');
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent('Say hello');
+    const response = await result.response;
+    const text = response.text();
+    console.log('Gemini test response:', text);
+    res.json({ success: true, response: text });
+  } catch (error) {
+    console.error('Gemini test error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // SIGNUP
 app.post("/api/signup", async (req, res) => {
   try {
@@ -134,6 +150,7 @@ app.get("/api/profile", authMiddleware, async (req, res) => {
 app.post("/api/generate-words", async (req, res) => {
   try {
     const { difficulty, accuracy, wpm, errors, wordCount } = req.body;
+    console.log('Generate words request:', { difficulty, accuracy, wpm, errors, wordCount });
     
     // Check if API key is available
     if (!GEMINI_API_KEY) {
@@ -149,42 +166,61 @@ app.post("/api/generate-words", async (req, res) => {
     }
     lastApiCall = now;
     
-    console.log('Making Gemini API request with key:', GEMINI_API_KEY.substring(0, 10) + '...');
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    console.log('Making Gemini API request...');
     
-    let prompt = `Generate exactly ${wordCount} words for a typing test with these requirements:
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      let prompt = `Generate exactly ${wordCount} words for a typing test with these requirements:
 - Difficulty: ${difficulty}
 - User's current accuracy: ${accuracy}%
 - User's current WPM: ${wpm}
 - Recent errors: ${errors}
 
 `;
-    
-    if (difficulty === 'easy') {
-      prompt += "Generate simple 3-5 letter common words that are easy to type.";
-    } else if (difficulty === 'medium') {
-      prompt += "Generate 5-8 letter words with moderate complexity.";
-    } else if (difficulty === 'hard') {
-      prompt += "Generate complex 8+ letter words with challenging letter combinations.";
-    } else if (difficulty === 'alphanumeric') {
-      prompt += "Generate programming-related terms, function calls, and code snippets.";
+      
+      if (difficulty === 'easy') {
+        prompt += "Generate simple 3-5 letter common words that are easy to type.";
+      } else if (difficulty === 'medium') {
+        prompt += "Generate 5-8 letter words with moderate complexity.";
+      } else if (difficulty === 'hard') {
+        prompt += "Generate complex 8+ letter words with challenging letter combinations.";
+      } else if (difficulty === 'alphanumeric') {
+        prompt += "Generate programming-related terms, function calls, and code snippets.";
+      }
+      
+      if (accuracy < 85) {
+        prompt += " Focus on words with letters the user might find challenging based on their accuracy.";
+      }
+      
+      prompt += " Return only the words separated by commas, no explanations.";
+      
+      console.log('Sending prompt to Gemini:', prompt.substring(0, 100) + '...');
+      
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      
+      console.log('Gemini response received:', text.substring(0, 100) + '...');
+      
+      const words = text.split(',').map(word => word.trim()).filter(word => word.length > 0);
+      
+      console.log('Generated words count:', words.length);
+      res.json({ words: words.slice(0, wordCount) });
+      
+    } catch (geminiError) {
+      console.error('Gemini API specific error:', geminiError.message);
+      console.error('Full error:', geminiError);
+      
+      // Return fallback response instead of error
+      return res.status(500).json({ 
+        error: 'Smart generation temporarily unavailable',
+        fallback: true 
+      });
     }
     
-    if (accuracy < 85) {
-      prompt += " Focus on words with letters the user might find challenging based on their accuracy.";
-    }
-    
-    prompt += " Return only the words separated by commas, no explanations.";
-    
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    const words = text.split(',').map(word => word.trim()).filter(word => word.length > 0);
-    
-    res.json({ words: words.slice(0, wordCount) });
   } catch (error) {
-    console.error('Gemini API error:', error);
+    console.error('General API error:', error);
     res.status(500).json({ error: 'Failed to generate words' });
   }
 });
