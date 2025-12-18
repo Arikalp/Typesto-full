@@ -13,14 +13,21 @@ const Page = () => {
   };
 
   if (!user) {
-    if (view === 'signup') return <Signup switchToLogin={() => setView('login')} setUser={setUser} />;
-    return <Login switchToSignup={() => setView('signup')} setUser={setUser} />;
+    if (view === 'signup'){ 
+      return <Signup switchToLogin={() => setView('login')} setUser={setUser} />;
+    } 
+    else{
+      return <Login switchToSignup={() => setView('signup')} setUser={setUser} />;
+    }
+      
+  }
+  else{
+      // Show TypingBox after login/signup
+      return (
+        <TypingBox user={user} onLogout={handleLogout} />
+      );
   }
 
-  // Show TypingBox after login/signup
-  return (
-    <TypingBox user={user} onLogout={handleLogout} />
-  );
 };
 
 export default Page;

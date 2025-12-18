@@ -68,7 +68,7 @@ export default function TypingBox() {
     }
     const list = wordsData[difficulty];
     return Array.from({ length: wordCount }, () => list[Math.floor(Math.random() * list.length)]);
-  }, [difficulty, sessionStats]);
+  }, [difficulty, sessionStats, wordCount]);
 
   const newGame = useCallback(async () => {
     if (isGenerating) return; // prevent concurrent calls

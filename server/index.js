@@ -1,5 +1,5 @@
 // index.js
-require('dotenv').config();
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
@@ -9,36 +9,39 @@ const cors = require("cors");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const User = require("./models/usermodal");
 const Leaderboard = require("./models/leaderboardmodal");
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = "supersecret";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // Initialize Gemini AI
-console.log('GEMINI_API_KEY loaded:', GEMINI_API_KEY ? 'Yes' : 'No');
+console.log("GEMINI_API_KEY loaded:", GEMINI_API_KEY ? "Yes" : "No");
 // console.log('API Key length:', GEMINI_API_KEY ? GEMINI_API_KEY.length : 0);
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // Rate limiting
 let lastApiCall = 0;
-const API_COOLDOWN = 5000; // 5 seconds between calls 
+const API_COOLDOWN = 5000; // 5 seconds between calls
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/typesto", {
+mongoose
+  .connect(process.env.MONGODB_URI || "mongodb://localhost:27017/typesto", {
     useNewUrlParser: true,
-    useUnifiedTopology: true
-})
-.then(() => console.log("Connected to MongoDB"))
-.catch(err => console.error("MongoDB connection error:", err));
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 // Middleware
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
-
 
 // -------------------- AUTH MIDDLEWARE --------------------
 function authMiddleware(req, res, next) {
@@ -57,43 +60,43 @@ function authMiddleware(req, res, next) {
 // -------------------- ROUTES --------------------
 
 // Add this route handler for the root path
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Typesto API is running!', 
-    status: 'success',
+app.get("/", (req, res) => {
+  res.json({
+    message: "Typesto API is running!",
+    status: "success",
     endpoints: {
-      login: '/api/login',
-      signup: '/api/signup',
-      leaderboard: '/api/leaderboard'
-    }
+      login: "/api/login",
+      signup: "/api/signup",
+      leaderboard: "/api/leaderboard",
+    },
   });
 });
 
 // Test Gemini API
-app.get('/api/test-gemini', async (req, res) => {
+app.get("/api/test-gemini", async (req, res) => {
   try {
-    console.log('Testing Gemini API...');
+    console.log("Testing Gemini API...");
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent('Say hello');
+    const result = await model.generateContent("Say hello");
     const response = await result.response;
     const text = response.text();
-    console.log('Gemini test response:', text);
+    console.log("Gemini test response:", text);
     res.json({ success: true, response: text });
   } catch (error) {
-    console.error('Gemini test error:', error);
+    console.error("Gemini test error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
 // List available models
-app.get('/api/gemini-models', async (req, res) => {
+app.get("/api/gemini-models", async (req, res) => {
   try {
-    console.log('Fetching available Gemini models...');
+    console.log("Fetching available Gemini models...");
     const models = await genAI.listModels();
-    console.log('Available models:', models);
+    console.log("Available models:", models);
     res.json({ success: true, models });
   } catch (error) {
-    console.error('Error fetching models:', error);
+    console.error("Error fetching models:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -136,9 +139,13 @@ app.post("/api/login", async (req, res) => {
     if (!isMatch) return res.status(400).json({ error: "Invalid password" });
 
     // Generate token
-    const token = jwt.sign({ id: user._id, username: user.username, email: user.email }, JWT_SECRET, {
-      expiresIn: "1d",
-    });
+    const token = jwt.sign(
+      { id: user._id, username: user.username, email: user.email },
+      JWT_SECRET,
+      {
+        expiresIn: "1d",
+      }
+    );
 
     res.cookie("token", token, { httpOnly: true });
     res.json({ message: "Login successful!" });
@@ -163,27 +170,35 @@ app.get("/api/profile", authMiddleware, async (req, res) => {
 app.post("/api/generate-words", async (req, res) => {
   try {
     const { difficulty, accuracy, wpm, errors, wordCount } = req.body;
-    console.log('Generate words request:', { difficulty, accuracy, wpm, errors, wordCount });
-    
+    console.log("Generate words request:", {
+      difficulty,
+      accuracy,
+      wpm,
+      errors,
+      wordCount,
+    });
+
     // Check if API key is available
     if (!GEMINI_API_KEY) {
-      console.error('Gemini API key not found');
-      return res.status(500).json({ error: 'API key not configured' });
+      console.error("Gemini API key not found");
+      return res.status(500).json({ error: "API key not configured" });
     }
-    
+
     // Rate limiting check
     const now = Date.now();
     if (now - lastApiCall < API_COOLDOWN) {
-      console.log('API call blocked due to rate limiting');
-      return res.status(429).json({ error: 'Rate limit exceeded, please wait' });
+      console.log("API call blocked due to rate limiting");
+      return res
+        .status(429)
+        .json({ error: "Rate limit exceeded, please wait" });
     }
     lastApiCall = now;
-    
-    console.log('Making Gemini API request...');
-    
+
+    console.log("Making Gemini API request...");
+
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      
+
       let prompt = `Generate exactly ${wordCount} words for a typing test with these requirements:
 - Difficulty: ${difficulty}
 - User's current accuracy: ${accuracy}%
@@ -191,50 +206,58 @@ app.post("/api/generate-words", async (req, res) => {
 - Recent errors: ${errors}
 
 `;
-      
-      if (difficulty === 'easy') {
-        prompt += "Generate simple 3-5 letter common words that are easy to type.";
-      } else if (difficulty === 'medium') {
+
+      if (difficulty === "easy") {
+        prompt +=
+          "Generate simple 3-5 letter common words that are easy to type.";
+      } else if (difficulty === "medium") {
         prompt += "Generate 5-8 letter words with moderate complexity.";
-      } else if (difficulty === 'hard') {
-        prompt += "Generate complex 8+ letter words with challenging letter combinations.";
-      } else if (difficulty === 'alphanumeric') {
-        prompt += "Generate programming-related terms, function calls, and code snippets.";
+      } else if (difficulty === "hard") {
+        prompt +=
+          "Generate complex 8+ letter words with challenging letter combinations.";
+      } else if (difficulty === "alphanumeric") {
+        prompt +=
+          "Generate programming-related terms, function calls, and code snippets.";
       }
-      
+
       if (accuracy < 85) {
-        prompt += " Focus on words with letters the user might find challenging based on their accuracy.";
+        prompt +=
+          " Focus on words with letters the user might find challenging based on their accuracy.";
       }
-      
+
       prompt += " Return only the words separated by commas, no explanations.";
-      
-      console.log('Sending prompt to Gemini:', prompt.substring(0, 100) + '...');
-      
+
+      console.log(
+        "Sending prompt to Gemini:",
+        prompt.substring(0, 100) + "..."
+      );
+
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
-      
-      console.log('Gemini response received:', text.substring(0, 100) + '...');
-      
-      const words = text.split(',').map(word => word.trim()).filter(word => word.length > 0);
-      
-      console.log('Generated words count:', words.length);
+
+      console.log("Gemini response received:", text.substring(0, 100) + "...");
+
+      const words = text
+        .split(",")
+        .map((word) => word.trim())
+        .filter((word) => word.length > 0);
+
+      console.log("Generated words count:", words.length);
       res.json({ words: words.slice(0, wordCount) });
-      
     } catch (geminiError) {
-      console.error('Gemini API specific error:', geminiError.message);
-      console.error('Full error:', geminiError);
-      
+      console.error("Gemini API specific error:", geminiError.message);
+      console.error("Full error:", geminiError);
+
       // Return fallback response instead of error
-      return res.status(500).json({ 
-        error: 'Smart generation temporarily unavailable',
-        fallback: true 
+      return res.status(500).json({
+        error: "Smart generation temporarily unavailable",
+        fallback: true,
       });
     }
-    
   } catch (error) {
-    console.error('General API error:', error);
-    res.status(500).json({ error: 'Failed to generate words' });
+    console.error("General API error:", error);
+    res.status(500).json({ error: "Failed to generate words" });
   }
 });
 
@@ -248,7 +271,7 @@ app.get("/api/leaderboard", async (req, res) => {
         easy: [],
         medium: [],
         hard: [],
-        alphanumeric: []
+        alphanumeric: [],
       });
       await newLeaderboard.save();
       return res.json(newLeaderboard);
@@ -263,29 +286,31 @@ app.get("/api/leaderboard", async (req, res) => {
 app.post("/api/leaderboard", async (req, res) => {
   try {
     const { difficulty, username, wpm } = req.body;
-    
+
     if (!difficulty || !username || !wpm) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
     let leaderboard = await Leaderboard.findOne();
-    
+
     if (!leaderboard) {
       // Create new leaderboard
       leaderboard = new Leaderboard({
         easy: [],
         medium: [],
         hard: [],
-        alphanumeric: []
+        alphanumeric: [],
       });
     }
 
     // Get current difficulty array
     let difficultyArray = leaderboard[difficulty] || [];
-    
+
     // Check if user already exists in leaderboard
-    const existingIndex = difficultyArray.findIndex(entry => entry.username === username);
-    
+    const existingIndex = difficultyArray.findIndex(
+      (entry) => entry.username === username
+    );
+
     if (existingIndex !== -1) {
       // Update existing user's score if new score is higher
       if (wpm > difficultyArray[existingIndex].wpm) {
@@ -295,15 +320,15 @@ app.post("/api/leaderboard", async (req, res) => {
       // Add new user
       difficultyArray.push({ username, wpm });
     }
-    
+
     // Sort by WPM (highest first) and keep only top 5
     difficultyArray.sort((a, b) => b.wpm - a.wpm);
     difficultyArray = difficultyArray.slice(0, 5);
-    
+
     // Update leaderboard
     leaderboard[difficulty] = difficultyArray;
     await leaderboard.save();
-    
+
     res.json({ message: "Leaderboard updated!", leaderboard });
   } catch (error) {
     res.status(500).json({ error: "Failed to update leaderboard" });
