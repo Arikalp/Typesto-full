@@ -12,9 +12,7 @@ export default function Leaderboard({ onClose }) {
 
   const fetchLeaderboard = async () => {
     try {
-      // Use environment variable or fallback to localhost
-      const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-      const response = await fetch(`${baseURL}/api/leaderboard`);
+      const response = await fetch('/api/leaderboard');
       const data = await response.json();
       setLeaderboard(data);
     } catch (error) {

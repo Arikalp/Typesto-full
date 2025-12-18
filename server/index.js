@@ -73,7 +73,7 @@ app.get('/', (req, res) => {
 app.get('/api/test-gemini', async (req, res) => {
   try {
     console.log('Testing Gemini API...');
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent('Say hello');
     const response = await result.response;
     const text = response.text();
@@ -81,6 +81,19 @@ app.get('/api/test-gemini', async (req, res) => {
     res.json({ success: true, response: text });
   } catch (error) {
     console.error('Gemini test error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// List available models
+app.get('/api/gemini-models', async (req, res) => {
+  try {
+    console.log('Fetching available Gemini models...');
+    const models = await genAI.listModels();
+    console.log('Available models:', models);
+    res.json({ success: true, models });
+  } catch (error) {
+    console.error('Error fetching models:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -169,7 +182,7 @@ app.post("/api/generate-words", async (req, res) => {
     console.log('Making Gemini API request...');
     
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       
       let prompt = `Generate exactly ${wordCount} words for a typing test with these requirements:
 - Difficulty: ${difficulty}

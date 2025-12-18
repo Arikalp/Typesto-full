@@ -19,6 +19,9 @@ const nextConfig = {
   },
   trailingSlash: false,
   poweredByHeader: false,
+  server: {
+    port: 8000,
+  },
 };
 
 export default nextConfig;

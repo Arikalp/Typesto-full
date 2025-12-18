@@ -365,8 +365,8 @@ export default function TypingBox() {
                         </button>
                       ))}
                     </div>
-                    <button onClick={() => { setShowLeaderboard(true); setShowDropdown(false); }} className="block w-full flex justify-center bg-blue-600 text-white px-4 py-2 text-sm hover:bg-blue-500 transition border-b border-gray-700">Leaderboard</button>
-                    <button onClick={handleLogout} className="block w-full flex justify-center bg-red-700 text-white px-4 py-2 text-sm hover:bg-red-600 transition">Logout</button>
+                    <button onClick={() => { setShowLeaderboard(true); setShowDropdown(false); }} className=" w-full flex justify-center bg-blue-600 text-white px-4 py-2 text-sm hover:bg-blue-500 transition border-b border-gray-700">Leaderboard</button>
+                    <button onClick={handleLogout} className=" w-full flex justify-center bg-red-700 text-white px-4 py-2 text-sm hover:bg-red-600 transition">Logout</button>
                   </div>
                 </div>
               )}
