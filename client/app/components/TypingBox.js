@@ -346,7 +346,7 @@ export default function TypingBox() {
                       <input 
                         type="range" 
                         min="25" 
-                        max="70" 
+                        max={difficulty === 'easy' ? 75 : difficulty === 'medium' ? 45 : difficulty === 'hard' ? 30 : 25} 
                         value={wordCount} 
                         onChange={(e) => setWordCount(parseInt(e.target.value))}
                         className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
@@ -354,7 +354,7 @@ export default function TypingBox() {
                       <div className="flex justify-between text-xs text-gray-400 mt-1">
                         <span>25</span>
                         <span className="text-yellow-400 font-semibold">{wordCount}</span>
-                        <span>70</span>
+                        <span>{difficulty === 'easy' ? 75 : difficulty === 'medium' ? 45 : difficulty === 'hard' ? 30 : 25}</span>
                       </div>
                     </div>
                     <div className="px-4 py-2 text-sm text-gray-300 border-b border-gray-700">
@@ -376,7 +376,7 @@ export default function TypingBox() {
         <div id="game">
           <div id="words" className="flex flex-wrap justify-center gap-2 font-serif font-bold text-[2vw] text-gray-200 leading-relaxed">
             {words.map((word, wi) => {
-              if (wi < currentWordIndex) return <span key={wi} className="text-gray-500 completed">{word}</span>;
+              if (wi < currentWordIndex) return <span key={wi} className="text-yellow-200 completed">{word}</span>;
               if (wi === currentWordIndex) {
                 return (
                   <span key={wi} className="relative bg-gray-700 px-1 rounded">
