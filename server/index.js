@@ -144,7 +144,9 @@ app.post("/api/login", async (req, res) => {
       }
     );
 
-    res.cookie("token", token, { httpOnly: true });
+    res.cookie("token", token, { httpOnly: true ,
+                                secure:true,
+                                samesite:"strict"});
     res.json({ message: "Login successful!" });
   } catch (err) {
     res.status(500).json({ error: err.message });
