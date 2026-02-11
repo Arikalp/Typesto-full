@@ -153,7 +153,11 @@ app.post("/api/login", async (req, res) => {
 
 // LOGOUT
 app.post("/api/logout", (req, res) => {
-  res.clearCookie("token");
+  res.clearCookie("token",{
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict"
+  });
   res.json({ message: "Logged out successfully!" });
 });
 
